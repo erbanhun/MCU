@@ -1,0 +1,173 @@
+C51 COMPILER V7.06   AD9522_4                                                              11/28/2016 13:19:33 PAGE 1   
+
+
+C51 COMPILER V7.06, COMPILATION OF MODULE AD9522_4
+OBJECT MODULE PLACED IN ad9522_4.OBJ
+COMPILER INVOKED BY: d:\Keil\C51\BIN\C51.EXE ad9522_4.c COMPACT BROWSE DEBUG OBJECTEXTEND
+
+stmt level    source
+
+   1          #include "C8051F340.h"
+   2          #define uchar unsigned char
+   3          #define uint  unsigned int
+   4          #define ulong unsigned long
+   5          
+   6          sbit CLK_CS     = P2^4;         //output
+   7          sbit CLK_SCLK   = P2^5;         //output 
+   8          sbit CLK_SDIO   = P2^6;         //output
+   9          sbit CLK_SDO    = P2^7;         //input
+  10          
+  11          extern void delay(uint cnt);                     // 延时
+  12          void CLK_SPI(uint add, uchar num);       // write CLK register
+  13          void ini9522(void);                      // 初始化CLK
+  14          uchar read_CLK(uint add);                //read CLK
+  15          
+  16          /*---------------------------------------
+  17          purpose:初始化CLK
+  18          parameters:  0:both pwn; 1:AD_clk normal,DA_clk pwn; 2:AD_clk pwn,DA_clk normal; 3:both normal
+  19                                   input:10M, output:32.72M
+  20          modify:
+  21          ----------------------------------------*/
+  22          void ini9522(void)
+  23          {
+  24   1              delay(5);
+  25   1      /*
+  26   1              CLK_SPI(0x00,0x81);                     //
+  27   1              CLK_SPI(0x10,0x7c);                     //normal
+  28   1              CLK_SPI(0x11,0x0a);                     //R=10
+  29   1              CLK_SPI(0x12,0x00);                     //R
+  30   1              CLK_SPI(0x13,0x00);                     //A=0
+  31   1              CLK_SPI(0x14,0x30);                     //B=48(0x30)
+  32   1              CLK_SPI(0x15,0x00);                     //B
+  33   1              CLK_SPI(0x1C,0xA2);                     //REF                           
+  34   1              CLK_SPI(0xf9,0x63);                 //power down
+  35   1              CLK_SPI(0xfa,0x63);                 //power down
+  36   1              CLK_SPI(0x190,0xcb);            //  /25
+  37   1              CLK_SPI(0x193,0xcb);            //  /25
+  38   1              CLK_SPI(0x196,0xcb);            //  /25
+  39   1              CLK_SPI(0x199,0x22);            //  /6
+  40   1              CLK_SPI(0x19b,0x04);            //power down out9,out10,out11
+  41   1              CLK_SPI(0x1e1,0x02);            //  vco divider input
+  42   1              CLK_SPI(0x18,0x06);                     //vco
+  43   1              CLK_SPI(0x232,0x01);            //update
+  44   1              CLK_SPI(0x18,0x07);                     //vco
+  45   1              CLK_SPI(0x232,0x01);            //update
+  46   1      */
+  47   1      
+  48   1              CLK_SPI(0x00,0x81);                     //
+  49   1              CLK_SPI(0x10,0x7c);                     //normal
+  50   1              CLK_SPI(0x11,0xfa);                     //R=250
+  51   1              CLK_SPI(0x12,0x00);                     //R
+  52   1              CLK_SPI(0x13,0x00);                     //A=0
+  53   1              CLK_SPI(0x14,0x80);                     //B=1152(0x480)
+  54   1              CLK_SPI(0x15,0x04);                     //B
+  55   1              CLK_SPI(0x1C,0xA2);                     //REF                           
+C51 COMPILER V7.06   AD9522_4                                                              11/28/2016 13:19:33 PAGE 2   
+
+  56   1              CLK_SPI(0xf9,0x63);                 //power down
+  57   1              CLK_SPI(0xfa,0x63);                 //power down
+  58   1              CLK_SPI(0x190,0xbb);            //  /24
+  59   1              CLK_SPI(0x193,0xbb);            //  /24
+  60   1              CLK_SPI(0x196,0xbb);            //  /24
+  61   1              CLK_SPI(0x199,0x22);            //  /6
+  62   1              CLK_SPI(0x1e1,0x02);            //  vco divider input
+  63   1              CLK_SPI(0x18,0x06);                     //vco
+  64   1              CLK_SPI(0x232,0x01);            //update
+  65   1              CLK_SPI(0x18,0x07);                     //vco
+  66   1              CLK_SPI(0x232,0x01);            //update
+  67   1      
+  68   1      }
+  69          /*---------------------------------------
+  70          purpose:在CLK指定的地址写寄存器的值
+  71          parameters:
+  72          modify:
+  73          ----------------------------------------*/
+  74          void CLK_SPI(uint add, uchar num)
+  75          {       
+  76   1              idata uchar i=0;
+  77   1              idata ulong reg=0;
+  78   1      
+  79   1              CLK_SDIO = 0;
+  80   1              CLK_CS=1;
+  81   1              reg=add;
+  82   1              reg=reg<<8;
+  83   1              reg=reg+num;
+  84   1              CLK_CS=0;
+  85   1              do
+  86   1              {
+  87   2                      if((reg&0x800000) == 0x800000)
+  88   2                              CLK_SDIO = 1;
+  89   2                      else
+  90   2                              CLK_SDIO = 0;
+  91   2                      CLK_SCLK = 0;
+  92   2                      delay(10);                                              //最小50ns
+  93   2                      CLK_SCLK = 1;
+  94   2                      delay(10);
+  95   2                      CLK_SCLK = 0;
+  96   2                      reg=reg<<1;
+  97   2                      i++;
+  98   2              }while(i<24);
+  99   1              CLK_CS=1;
+ 100   1      }
+ 101          /*---------------------------------------
+ 102          purpose:read CLK
+ 103          parameters:
+ 104          modify:
+ 105          ----------------------------------------*/                                                                       
+ 106          uchar read_CLK(uint add)
+ 107          {       
+ 108   1              idata uchar i=0;
+ 109   1              idata uint reg=0;
+ 110   1              idata uchar da_temp,temp;
+ 111   1                      
+ 112   1              CLK_CS=1;
+ 113   1              reg=add+0x8000;                                         //16bit instruction
+ 114   1              CLK_SDIO = 0;
+ 115   1              CLK_CS=0;
+ 116   1              do                                                                      
+ 117   1              {
+C51 COMPILER V7.06   AD9522_4                                                              11/28/2016 13:19:33 PAGE 3   
+
+ 118   2                      if((reg&0x8000) == 0x8000)
+ 119   2                              CLK_SDIO = 1;
+ 120   2                      else
+ 121   2                              CLK_SDIO = 0;
+ 122   2                      CLK_SCLK = 0;
+ 123   2                      delay(10);                                              //最小50ns
+ 124   2                      CLK_SCLK = 1;
+ 125   2                      delay(10);
+ 126   2                      CLK_SCLK = 0;
+ 127   2                      reg=reg<<1;
+ 128   2                      i++;
+ 129   2              }while(i<16);
+ 130   1      
+ 131   1              i=0;
+ 132   1              do
+ 133   1              {
+ 134   2                      CLK_SCLK = 0;
+ 135   2                      delay(10);                                              //最小50ns
+ 136   2                      CLK_SCLK = 1;
+ 137   2                      da_temp=da_temp<<1;
+ 138   2                      temp=CLK_SDO;
+ 139   2                      da_temp=temp+da_temp;
+ 140   2                      delay(10);
+ 141   2                      CLK_SCLK = 0;
+ 142   2                      i++;
+ 143   2              }while(i<8);
+ 144   1              CLK_CS=1;
+ 145   1              return da_temp;
+ 146   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    467    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----       1
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----      10
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

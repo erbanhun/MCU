@@ -1,0 +1,23 @@
+C51 COMPILER V7.06   SI750                                                                 11/28/2016 13:19:36 PAGE 1   
+
+
+C51 COMPILER V7.06, COMPILATION OF MODULE SI750
+OBJECT MODULE PLACED IN si750.OBJ
+COMPILER INVOKED BY: d:\Keil\C51\BIN\C51.EXE si750.c COMPACT BROWSE DEBUG OBJECTEXTEND
+
+stmt level    source
+
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

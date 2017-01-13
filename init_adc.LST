@@ -1,0 +1,547 @@
+C51 COMPILER V7.06   INIT_ADC                                                              11/28/2016 13:20:53 PAGE 1   
+
+
+C51 COMPILER V7.06, COMPILATION OF MODULE INIT_ADC
+OBJECT MODULE PLACED IN init_adc.OBJ
+COMPILER INVOKED BY: d:\Keil\C51\BIN\C51.EXE init_adc.c COMPACT ROM(COMPACT) BROWSE DEBUG OBJECTEXTEND
+
+stmt level    source
+
+   1          #include <c8051f340.h>
+   2          #include <stddef.h>                  // Used for NULL pointer definition
+   3          
+   4          
+   5          //********************************************************//
+   6          //***************Constants Definitions********************//
+   7          //********************************************************//
+   8          #define uchar unsigned char
+   9          #define uint  unsigned int
+  10          #define ulong unsigned long
+  11          
+  12          //-------------------------------------------------------//
+  13          //***************Constants Definitions[End]**************//
+  14          //-------------------------------------------------------//
+  15          
+  16          
+  17          //*******************************************************//
+  18          //*********************引脚定义**************************//
+  19          //*******************************************************//
+  20          sbit ADC_CS1    = P2^4;         //output
+  21          sbit ADC_CS2    = P2^7;         //output
+  22          sbit ADC_SCLK   = P2^5;         //output 
+  23          sbit ADC_SDIO   = P2^6;         //output(write),input(read)
+  24          
+  25          sbit DAC_CS1    = P3^0;         //output
+  26          sbit DAC_CS2    = P3^4;         //output
+  27          sbit DAC_SCLK   = P3^1;         //output 
+  28          sbit DAC_SDIO   = P3^2;         //output
+  29          sbit DAC_SDO    = P3^3;         //input
+  30          
+  31          sbit CLK_RESET  = P1^6;         //output
+  32          sbit CLK_CS     = P1^2;         //output
+  33          sbit CLK_SCLK   = P1^3;         //output 
+  34          sbit CLK_SDIO   = P1^4;         //output
+  35          sbit CLK_SDO    = P1^5;         //input
+  36          
+  37          
+  38          sbit PLL1_LD    = P2^2;         //input
+  39          sbit PLL2_LD    = P2^3;         //input
+  40          sbit PLL_bak    = P3^5;         //output
+  41          
+  42          sbit BCM_RESET  = P1^0;         //output
+  43          sbit BCM_MDIO1  = P0^5;         //output
+  44          sbit BCM_MDIO2  = P0^4;         //output
+  45          sbit BCM_MDIO3  = P0^7;         //output
+  46          sbit BCM_MDIO4  = P0^6;         //output
+  47          sbit BCM_MDC1   = P0^3;         //output
+  48          sbit BCM_MDC2   = P0^2;         //output
+  49          sbit BCM_MDC3   = P0^1;         //output
+  50          sbit BCM_MDC4   = P0^0;         //output
+  51          
+  52          sbit FPGA_Program       = P1^1; //output
+  53          //-------------------------------------------------------//
+  54          //********************引脚定义[End]**********************//
+  55          //-------------------------------------------------------//
+C51 COMPILER V7.06   INIT_ADC                                                              11/28/2016 13:20:53 PAGE 2   
+
+  56          
+  57          
+  58          
+  59          //*******************************************************//
+  60          //******* [BEGIN] Function Information [BEGIN] **********//
+  61          //*******************************************************//
+  62          
+  63          
+  64          void Init_Device(void);                  // Initialize Ports Pins and Enable Crossbar
+  65          void delay(uint cnt);                    // 延时
+  66          
+  67          void AD_SPI(uchar add, uchar num);       // write AD register
+  68          void CLK_SPI(uint add, uchar num);       // write CLK register
+  69          void DA_SPI(uchar add, uchar num);       // write DA register
+  70          
+  71          void ini9627(uchar number);                      // 初始化ADC,0:power down;1:normal
+  72          void ini9522(uchar number);                      // 初始化CLK,
+  73          void ini9779(uchar number);                      // 初始化DAC,0:power down;1:normal
+  74          
+  75          uchar read_DA(uchar num,uchar add);              //read DAC
+  76          uchar read_AD(uchar num,uchar add);              //read ADC
+  77          uchar read_CLK(uint add);                //read CLK
+  78          //-------------------------------------------------------//
+  79          //*************Function Information [ END ]**************//
+  80          //-------------------------------------------------------//
+  81          
+  82          
+  83          //*******************************************************//
+  84          //*******************************************************//
+  85          //*******************************************************//
+  86          /*---------------------------------------
+  87          purpose:主程序
+  88          parameters:
+  89          modify:
+  90          ----------------------------------------*/      
+  91          void main()
+  92          {
+  93   1              uchar clk;
+  94   1      
+  95   1              PCA0MD &= ~0x40;                          // WDTE = 0 (clear watchdog timer enable)                                           
+             -  
+  96   1              Init_Device();
+  97   1      
+  98   1              ini9627(0);
+  99   1              ini9779(0);
+ 100   1              clk=read_CLK(0x19);
+ 101   1              ini9522(2);     
+ 102   1      
+ 103   1              clk=read_CLK(0x32);
+ 104   1              clk=read_CLK(0x34);
+ 105   1      
+ 106   1      
+ 107   1              P4=0x00;
+ 108   1              P4=0xff;
+ 109   1      
+ 110   1          while (1);
+ 111   1      }
+ 112          /*---------------------------------------
+ 113          purpose:初始化MCU
+ 114          parameters:
+ 115          modify:
+ 116          ----------------------------------------*/
+C51 COMPILER V7.06   INIT_ADC                                                              11/28/2016 13:20:53 PAGE 3   
+
+ 117          void Init_Device(void)
+ 118          {
+ 119   1         OSCICN = 0x83;                      //Configure internal oscillator for its highest frequency
+ 120   1      
+ 121   1         P0MDIN   = 0xff;                                        //digital port
+ 122   1         P0MDOUT  = 0xff;                    //output
+ 123   1         P0       = 0x00;                                        //
+ 124   1                                             
+ 125   1         P1MDIN   = 0xff;                                        //digital port
+ 126   1         P1MDOUT  = 0xdf;                    //P1.5:input
+ 127   1         P1       = 0x20;
+ 128   1      
+ 129   1         P2MDIN   = 0xff;                                        //digital port
+ 130   1         P2MDOUT  = 0xf3;                    //P2.2,P2.3:input
+ 131   1         P2       = 0x0c;
+ 132   1      
+ 133   1         P3MDIN   = 0xff;                                        //digital port
+ 134   1         P3MDOUT  = 0xf7;                    //P3.3:input
+ 135   1         P3       = 0x08;                    
+ 136   1      
+ 137   1         P4MDIN   = 0xff;                                        //digital port
+ 138   1         P4MDOUT  = 0xff;                    //output
+ 139   1         P4       = 0x00;                    
+ 140   1      
+ 141   1         XBR0     = 0x00;                    // No digital peripherals selected
+ 142   1         XBR1     = 0x40;                    // Enable crossbar and weak pull-ups
+ 143   1      }
+ 144          /*---------------------------------------
+ 145          purpose:延时
+ 146          parameters:
+ 147          modify:
+ 148          ----------------------------------------*/
+ 149          void delay(uint cnt)
+ 150          {
+ 151   1              idata uint k;
+ 152   1              k=cnt;
+ 153   1              while(k>0)k--;
+ 154   1      }
+ 155          
+ 156          /*---------------------------------------
+ 157          purpose:在ADC指定的地址写寄存器的值
+ 158          parameters:
+ 159          modify:
+ 160          ----------------------------------------*/
+ 161          void AD_SPI(uchar add, uchar num)
+ 162          {       
+ 163   1              idata uchar i=0;
+ 164   1              idata ulong reg=0;
+ 165   1      
+ 166   1              P2MDOUT  = 0xf3;                                        //P2.6(SDIO):output
+ 167   1              ADC_SDIO = 0;
+ 168   1      
+ 169   1              ADC_CS1=1;
+ 170   1              ADC_CS2=1;
+ 171   1              reg=add;
+ 172   1              reg=reg<<8;
+ 173   1              reg=reg+num;
+ 174   1              ADC_CS1=0;
+ 175   1              ADC_CS2=0;
+ 176   1              do
+ 177   1              {
+ 178   2                      if((reg&0x800000) == 0x800000)
+C51 COMPILER V7.06   INIT_ADC                                                              11/28/2016 13:20:53 PAGE 4   
+
+ 179   2                              ADC_SDIO = 1;
+ 180   2                      else
+ 181   2                              ADC_SDIO = 0;
+ 182   2                      ADC_SCLK = 0;
+ 183   2                      delay(10);                                              //最小50ns
+ 184   2                      ADC_SCLK = 1;
+ 185   2                      delay(10);
+ 186   2                      ADC_SCLK = 0;
+ 187   2                      reg=reg<<1;
+ 188   2                      i++;
+ 189   2              }while(i<24);
+ 190   1              ADC_CS1=1;
+ 191   1              ADC_CS2=1;
+ 192   1      }
+ 193          /*---------------------------------------
+ 194          purpose:在CLK指定的地址写寄存器的值
+ 195          parameters:
+ 196          modify:
+ 197          ----------------------------------------*/
+ 198          void CLK_SPI(uint add, uchar num)
+ 199          {       
+ 200   1              idata uchar i=0;
+ 201   1              idata ulong reg=0;
+ 202   1      
+ 203   1              CLK_RESET= 1;                                           //reset ESC
+ 204   1              CLK_SDIO = 0;
+ 205   1              CLK_CS=1;
+ 206   1              reg=add;
+ 207   1              reg=reg<<8;
+ 208   1              reg=reg+num;
+ 209   1              CLK_CS=0;
+ 210   1              do
+ 211   1              {
+ 212   2                      if((reg&0x800000) == 0x800000)
+ 213   2                              CLK_SDIO = 1;
+ 214   2                      else
+ 215   2                              CLK_SDIO = 0;
+ 216   2                      CLK_SCLK = 0;
+ 217   2                      delay(10);                                              //最小50ns
+ 218   2                      CLK_SCLK = 1;
+ 219   2                      delay(10);
+ 220   2                      CLK_SCLK = 0;
+ 221   2                      reg=reg<<1;
+ 222   2                      i++;
+ 223   2              }while(i<24);
+ 224   1              CLK_CS=1;
+ 225   1      }
+ 226          /*---------------------------------------
+ 227          purpose:在DAC指定的地址写寄存器的值
+ 228          parameters:
+ 229          modify:
+ 230          ----------------------------------------*/
+ 231          void DA_SPI(uchar add, uchar num)
+ 232          {       
+ 233   1              idata uchar i=0;
+ 234   1              idata uint  reg=0;
+ 235   1      
+ 236   1              DAC_SDIO = 0;
+ 237   1              DAC_CS1=1;
+ 238   1              DAC_CS2=1;
+ 239   1              reg=add;
+ 240   1              reg=reg<<8;
+C51 COMPILER V7.06   INIT_ADC                                                              11/28/2016 13:20:53 PAGE 5   
+
+ 241   1              reg=reg+num;
+ 242   1              DAC_CS1=0;
+ 243   1              DAC_CS2=0;
+ 244   1              do
+ 245   1              {
+ 246   2                      if((reg&0x8000) == 0x8000)
+ 247   2                              DAC_SDIO = 1;
+ 248   2                      else
+ 249   2                              DAC_SDIO = 0;
+ 250   2                      DAC_SCLK = 0;
+ 251   2                      delay(10);                                              //最小50ns
+ 252   2                      DAC_SCLK = 1;
+ 253   2                      delay(10);
+ 254   2                      DAC_SCLK = 0;
+ 255   2                      reg=reg<<1;
+ 256   2                      i++;
+ 257   2              }while(i<16);
+ 258   1              DAC_CS1=1;
+ 259   1              DAC_CS2=1;
+ 260   1      }
+ 261          /*---------------------------------------
+ 262          purpose:read ADC
+ 263          parameters:
+ 264          modify:
+ 265          ----------------------------------------*/                                                                       
+ 266          uchar read_AD(uchar num,uchar add)
+ 267          {       
+ 268   1              idata uchar i=0;
+ 269   1              idata uint reg=0;
+ 270   1              idata uchar da_temp,temp;
+ 271   1                      
+ 272   1              ADC_CS1=1;
+ 273   1              ADC_CS2=1;
+ 274   1              reg=add+0x8000;                                         //16bit instruction
+ 275   1      
+ 276   1              P2MDOUT  = 0xf3;                                        //P2.6(SDIO):output
+ 277   1              ADC_SDIO = 0;
+ 278   1      
+ 279   1              if(num==1)
+ 280   1                      ADC_CS1=0;
+ 281   1              else
+ 282   1                      ADC_CS2=0;
+ 283   1              do                                                                      
+ 284   1              {
+ 285   2                      if((reg&0x8000) == 0x8000)
+ 286   2                              ADC_SDIO = 1;
+ 287   2                      else
+ 288   2                              ADC_SDIO = 0;
+ 289   2                      ADC_SCLK = 0;
+ 290   2                      delay(10);                                              //最小50ns
+ 291   2                      ADC_SCLK = 1;
+ 292   2                      delay(10);
+ 293   2                      ADC_SCLK = 0;
+ 294   2                      reg=reg<<1;
+ 295   2                      i++;
+ 296   2              }while(i<16);
+ 297   1              i=0;
+ 298   1      
+ 299   1              P2MDOUT  = 0xb3;                                        //P2.6(SDIO):input
+ 300   1              ADC_SDIO = 1;
+ 301   1              do
+ 302   1              {
+C51 COMPILER V7.06   INIT_ADC                                                              11/28/2016 13:20:53 PAGE 6   
+
+ 303   2                      ADC_SCLK = 0;
+ 304   2                      delay(10);                                              //最小50ns
+ 305   2                      ADC_SCLK = 1;
+ 306   2                      da_temp=da_temp<<1;
+ 307   2                      temp=ADC_SDIO;
+ 308   2                      da_temp=temp+da_temp;
+ 309   2                      delay(10);
+ 310   2                      ADC_SCLK = 0;
+ 311   2                      i++;
+ 312   2              }while(i<8);
+ 313   1              ADC_CS1=1;
+ 314   1              ADC_CS2=1;
+ 315   1      
+ 316   1              return da_temp;
+ 317   1      }
+ 318          /*---------------------------------------
+ 319          purpose:read CLK
+ 320          parameters:
+ 321          modify:
+ 322          ----------------------------------------*/                                                                       
+ 323          uchar read_CLK(uint add)
+ 324          {       
+ 325   1              idata uchar i=0;
+ 326   1              idata uint reg=0;
+ 327   1              idata uchar da_temp,temp;
+ 328   1              
+ 329   1              CLK_RESET=1;    
+ 330   1              CLK_CS=1;
+ 331   1              reg=add+0x8000;                                         //16bit instruction
+ 332   1              CLK_SDIO = 0;
+ 333   1              CLK_CS=0;
+ 334   1              do                                                                      
+ 335   1              {
+ 336   2                      if((reg&0x8000) == 0x8000)
+ 337   2                              CLK_SDIO = 1;
+ 338   2                      else
+ 339   2                              CLK_SDIO = 0;
+ 340   2                      CLK_SCLK = 0;
+ 341   2                      delay(10);                                              //最小50ns
+ 342   2                      CLK_SCLK = 1;
+ 343   2                      delay(10);
+ 344   2                      CLK_SCLK = 0;
+ 345   2                      reg=reg<<1;
+ 346   2                      i++;
+ 347   2              }while(i<16);
+ 348   1      
+ 349   1              i=0;
+ 350   1              do
+ 351   1              {
+ 352   2                      CLK_SCLK = 0;
+ 353   2                      delay(10);                                              //最小50ns
+ 354   2                      CLK_SCLK = 1;
+ 355   2                      da_temp=da_temp<<1;
+ 356   2                      temp=CLK_SDO;
+ 357   2                      da_temp=temp+da_temp;
+ 358   2                      delay(10);
+ 359   2                      CLK_SCLK = 0;
+ 360   2                      i++;
+ 361   2              }while(i<8);
+ 362   1              CLK_CS=1;
+ 363   1              return da_temp;
+ 364   1      }
+C51 COMPILER V7.06   INIT_ADC                                                              11/28/2016 13:20:53 PAGE 7   
+
+ 365          /*---------------------------------------
+ 366          purpose:read AD9779
+ 367          parameters:
+ 368          modify:
+ 369          ----------------------------------------*/                                                                       
+ 370          uchar read_DA(uchar num,uchar add)
+ 371          {       
+ 372   1              idata uchar i=0;
+ 373   1              idata uchar reg=0;
+ 374   1              idata uchar da_temp,temp;       
+ 375   1      
+ 376   1              DAC_SDIO = 0;           
+ 377   1              DAC_CS1=1;
+ 378   1              DAC_CS2=1;
+ 379   1              reg=add+0x80;                   //8bit instruction
+ 380   1              if(num==1)
+ 381   1                      DAC_CS1=0;
+ 382   1              else
+ 383   1                      DAC_CS2=0;
+ 384   1              do
+ 385   1              {
+ 386   2                      if((reg&0x80) == 0x80)
+ 387   2                              DAC_SDIO = 1;
+ 388   2                      else
+ 389   2                              DAC_SDIO = 0;
+ 390   2                      DAC_SCLK = 0;
+ 391   2                      delay(10);                                              //最小50ns
+ 392   2                      DAC_SCLK = 1;
+ 393   2                      delay(10);
+ 394   2                      DAC_SCLK = 0;
+ 395   2                      reg=reg<<1;
+ 396   2                      i++;
+ 397   2              }while(i<8);
+ 398   1              i=0;
+ 399   1              do
+ 400   1              {
+ 401   2                      DAC_SCLK = 0;
+ 402   2                      delay(10);                                              //最小50ns
+ 403   2                      DAC_SCLK = 1;
+ 404   2                      da_temp=da_temp<<1;
+ 405   2                      temp=DAC_SDO;
+ 406   2                      da_temp=temp+da_temp;
+ 407   2                      delay(10);
+ 408   2                      DAC_SCLK = 0;
+ 409   2                      i++;
+ 410   2              }while(i<8);
+ 411   1              DAC_CS1=1;
+ 412   1              DAC_CS2=1;
+ 413   1      
+ 414   1              return da_temp;
+ 415   1      }
+ 416          /*---------------------------------------
+ 417          purpose:初始化ADC
+ 418          parameters:  0:power down;1:normal
+ 419          modify:
+ 420          ----------------------------------------*/
+ 421          void ini9627(uchar number)
+ 422          {
+ 423   1              delay(5);
+ 424   1          //-------ad set-------//
+ 425   1              if(number==0)
+ 426   1              {
+C51 COMPILER V7.06   INIT_ADC                                                              11/28/2016 13:20:53 PAGE 8   
+
+ 427   2                      AD_SPI(0x08,0x01);                      //power down AD
+ 428   2                      AD_SPI(0xff,0x01);                      //update AD register
+ 429   2              }
+ 430   1              else
+ 431   1              {
+ 432   2                      AD_SPI(0x08,0x00);                      //AD normal
+ 433   2                      AD_SPI(0x14,0x00);                      //cmos output,offset(unsigned) binary
+ 434   2                      AD_SPI(0xff,0x01);                      //update AD register
+ 435   2              }
+ 436   1      }
+ 437          /*---------------------------------------
+ 438          purpose:初始化CLK
+ 439          parameters:  0:both pwn; 1:AD_clk normal,DA_clk pwn; 2:AD_clk pwn,DA_clk normal; 3:both normal
+ 440                                   input:10M, output:32.72M
+ 441          modify:
+ 442          ----------------------------------------*/
+ 443          void ini9552(uchar number)
+ 444          {
+ 445   1              delay(5);
+ 446   1          //-------clk set-------//
+ 447   1              if(number==0)
+ 448   1              {
+ 449   2                      CLK_SPI(0x32,0xe8);                     //power down DA clock
+ 450   2                      CLK_SPI(0x34,0xe8);                     //power down AD clock
+ 451   2                      CLK_SPI(0x05,0x01);                     //update CLK register
+ 452   2              }
+ 453   1              else if(number==1)
+ 454   1              {
+ 455   2                      CLK_SPI(0x11,0xb4);
+ 456   2                      CLK_SPI(0x14,0x0e);
+ 457   2                      CLK_SPI(0x15,0x00);
+ 458   2      
+ 459   2                      CLK_SPI(0x17,0x00);
+ 460   2                      CLK_SPI(0x18,0x32);
+ 461   2                      CLK_SPI(0x19,0x80);                     
+ 462   2                      CLK_SPI(0x1d,0x04);
+ 463   2      
+ 464   2                      CLK_SPI(0x32,0xe8);                     //power down DA clock
+ 465   2                      CLK_SPI(0x34,0xa8);                     //AD clock normal----
+ 466   2                      CLK_SPI(0x05,0x01);                     //update CLK register
+ 467   2              }       
+ 468   1              else if(number==2)
+ 469   1              {
+ 470   2                      CLK_SPI(0x11,0xb4);
+ 471   2                      CLK_SPI(0x14,0x0e);
+ 472   2                      CLK_SPI(0x15,0x00);
+ 473   2      
+ 474   2                      CLK_SPI(0x17,0x00);
+ 475   2                      CLK_SPI(0x18,0x32);
+ 476   2                      CLK_SPI(0x19,0x80);
+ 477   2                      CLK_SPI(0x1d,0x04);
+ 478   2      
+ 479   2                      CLK_SPI(0x32,0xa8);                     //DA clock normal----
+ 480   2                      CLK_SPI(0x34,0xe8);                     //power down AD clock
+ 481   2                      CLK_SPI(0x05,0x01);                     //update CLK register
+ 482   2              }
+ 483   1              else if(number==3)
+ 484   1              {
+ 485   2                      CLK_SPI(0x32,0xa8);                     //
+ 486   2                      CLK_SPI(0x34,0xa8);                     //
+ 487   2                      CLK_SPI(0x05,0x01);                     //update CLK register
+ 488   2              }
+C51 COMPILER V7.06   INIT_ADC                                                              11/28/2016 13:20:53 PAGE 9   
+
+ 489   1      }
+ 490          /*---------------------------------------
+ 491          purpose:初始化DAC
+ 492          parameters:  0:power down;1:normal
+ 493          modify:
+ 494          ----------------------------------------*/
+ 495          void ini9779(uchar number)
+ 496          {
+ 497   1              delay(5);
+ 498   1          //-------da set-------//
+ 499   1              if(number==0)
+ 500   1                      DA_SPI(0x00,0x10);                      //power down DA
+ 501   1              else
+ 502   1              {
+ 503   2                      DA_SPI(0x00,0x00);                      //DA normal
+ 504   2                      DA_SPI(0x02,0x80);                      //unsigned binary
+ 505   2              }
+ 506   1      }
+ 507          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1190    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----       3
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----      29
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

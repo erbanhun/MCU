@@ -1,0 +1,228 @@
+C51 COMPILER V7.06   DAC38J84                                                              11/28/2016 13:19:35 PAGE 1   
+
+
+C51 COMPILER V7.06, COMPILATION OF MODULE DAC38J84
+OBJECT MODULE PLACED IN dac38j84.OBJ
+COMPILER INVOKED BY: d:\Keil\C51\BIN\C51.EXE dac38j84.c COMPACT BROWSE DEBUG OBJECTEXTEND
+
+stmt level    source
+
+   1                                                                                                                                  #include "C8051F340.h"
+   2          #define uchar unsigned char
+   3          #define uint  unsigned int
+   4          #define ulong unsigned long
+   5          
+   6          sbit DAC_RESET  = P0^1;         //output
+   7          sbit DAC_TRSTB  = P0^0;         //output
+   8          sbit DAC_SDENB  = P0^3;         //output
+   9          sbit DAC_SCLK   = P0^2;         //output 
+  10          sbit DAC_SDIO   = P0^4;         //output
+  11          sbit DAC_SDO    = P0^5;         //input
+  12           
+  13          
+  14           sbit LMK_SYNC   = P2^3;        
+  15          extern void delay(uint cnt);                     // 延时
+  16          void DA_SPI(uchar add, ulong num);       // write DA register
+  17          void inidac38j84(uchar number);                  // 初始化DAC,0:power down;1:normal
+  18          uint read_DA(uint add);          //read DAC
+  19          /*---------------------------------------
+  20          purpose:初始化DAC
+  21          parameters:  0:power down;1:normal
+  22          modify:
+  23          ----------------------------------------*/
+  24          void inidac38j84(uchar number)
+  25          {
+  26   1                  delay(5);
+  27   1                      DAC_TRSTB=0;
+  28   1              
+  29   1      //-------da set-------//
+  30   1              if(number==1)
+  31   1              {       
+  32   2                      DAC_RESET=1;
+  33   2                      delay(5);
+  34   2                      DAC_RESET=0;
+  35   2                      delay(5);
+  36   2          DAC_RESET=1;
+  37   2                      delay(5);
+  38   2      
+  39   2                      
+  40   2              /*      DA_SPI(0x00,0x0118);    
+  41   2                      DA_SPI(0x01,0x0003);    
+  42   2                      DA_SPI(0x02,0x0002);    //      
+  43   2                      DA_SPI(0x1a,0x0020);    //
+  44   2                              DA_SPI(0x24,0x0020);    //
+  45   2                              DA_SPI(0x25,0x4000);    //
+  46   2                      DA_SPI(0x31,0x1000);    //
+  47   2                              DA_SPI(0x3b,0x0000);    //
+  48   2                      DA_SPI(0x3c,0x8028);    //
+  49   2                      DA_SPI(0x3d,0x0088);    //
+  50   2                      DA_SPI(0x3e,0x0128);    //
+  51   2                      DA_SPI(0x4a,0xff1e);
+  52   2      DA_SPI(0x4b,0x1200);                    
+  53   2      DA_SPI(0x4c,0x1307);
+  54   2      DA_SPI(0x4d,0x0300);
+  55   2      DA_SPI(0x4e,0x0f4f);
+C51 COMPILER V7.06   DAC38J84                                                              11/28/2016 13:19:35 PAGE 2   
+
+  56   2      DA_SPI(0x4f,0x1c61);
+  57   2      
+  58   2      DA_SPI(0x51,0x00dc);
+  59   2      
+  60   2      DA_SPI(0x5c,0x1133);
+  61   2      DA_SPI(0x1b,0x0200);//dtest
+  62   2       //DA_SPI(0x51,0x0000);         //0 1 2 3 4ok 5ok 6ok 7ok
+  63   2         // DA_SPI(0x52,0x0000);      
+  64   2      
+  65   2              DA_SPI(0x4a,0xff01); 
+  66   2              
+  67   2              
+  68   2              
+  69   2              DA_SPI(0x03,0xf301); */
+  70   2              
+  71   2                DA_SPI(0x02,0x2082);                     //4xian spi  
+  72   2      
+  73   2                      DA_SPI(0x1a,0x0020);                    //dac_pll DISabled        --pll-sleep=1
+  74   2                      DA_SPI(0x31,0x1000);                     //     --pll-reset=1pll_ena=0
+  75   2              
+  76   2                      DA_SPI(0x3b,0x0800);                    //the SERDES settings      serdes_ clk_sel=0, serdes_refclk_div= 2 0800
+  77   2      
+  78   2                      DA_SPI(0x3C,0x8028);                    //100 10(LB) 0(SLEEPY)0(RANGE) 00010100(MPY=5) 0
+  79   2                      DA_SPI(0x3D,0x0088);//61
+  80   2                      DA_SPI(0x3E,0x0128);//62  00000 001(TERM) 0 01(RATE) 010 (BUSWIDTH)20bit 011(16bit) 00    552.96/1*5*2  0
+             -128
+  81   2                      DA_SPI(0x3F,0x0000);//63
+  82   2              
+  83   2                      DA_SPI(0x24,0x0010);  //cdrvser_sysref_mode =2
+  84   2                      DA_SPI(0x25,0x4000);    //clkjesd_div=4  4000
+  85   2                      DA_SPI(0x00,0x0118);  //interp=2.
+  86   2                      
+  87   2                      
+  88   2                DA_SPI(0x4a,0xFF1E);  //lane_ena  74
+  89   2                      DA_SPI(0x4b,0x1300); //F=1    75
+  90   2                      DA_SPI(0x4c,0x1307); //K=20,L=8    76
+  91   2                      DA_SPI(0x4d,0x0300); //M=4,S=1    77
+  92   2                      DA_SPI(0x4e,0x0f4f);  //SCR_DIS,HD=1   78
+  93   2         //DA_SPI(0x51,0x0000);       //0 1 2 3 4ok 5ok 6ok 7ok
+  94   2        // DA_SPI(0x52,0x0000);       
+  95   2      
+  96   2                DA_SPI(0x4f,0x1cc1);
+  97   2      
+  98   2                      DA_SPI(0x5C,0x1111);            //SYSREF MODE  92
+  99   2                DA_SPI(0x61,0x0001);          //SYNC MODE  97
+ 100   2                      
+ 101   2                      read_DA(0x6C);           //read SERDES PLL alarms  default 0x0000
+ 102   2                      DA_SPI(0x6C,0x0000);    
+ 103   2                      DA_SPI(0x4a,0xff01);                     //Set init_state to “0000” and jesd_reset_n to “1” to start the JESD204B
+             - link initialization
+ 104   2              //Start the SYSREF generation
+ 105   2                       delay(100);
+ 106   2                      //DA_SPI(0x1b,0x0200);//dtest
+ 107   2              //              //sif_txenable to “1”.
+ 108   2                      
+ 109   2      DA_SPI(0x03,0xf301); 
+ 110   2      read_DA(0x03);
+ 111   2              }
+ 112   1      }
+ 113          
+ 114          /*---------------------------------------
+ 115          purpose:在DAC指定的地址写寄存器的值
+C51 COMPILER V7.06   DAC38J84                                                              11/28/2016 13:19:35 PAGE 3   
+
+ 116          parameters:
+ 117          modify:
+ 118          ----------------------------------------*/
+ 119          void DA_SPI(uchar add, ulong num)
+ 120          {       
+ 121   1              idata uchar i=0;
+ 122   1              idata ulong  reg=0;
+ 123   1      
+ 124   1              //DAC_SDIO = 0;
+ 125   1              DAC_SDENB=1;
+ 126   1              reg=add;
+ 127   1              reg=reg<<16;
+ 128   1              reg=reg+num;
+ 129   1              DAC_SDENB=0;
+ 130   1      
+ 131   1              do
+ 132   1              {
+ 133   2                      if((reg&0x800000) == 0x800000)
+ 134   2                              DAC_SDIO = 1;
+ 135   2                      else
+ 136   2                              DAC_SDIO = 0;
+ 137   2                      DAC_SCLK = 0;
+ 138   2                      delay(10);                                              //最小50ns
+ 139   2                      DAC_SCLK = 1;
+ 140   2                      delay(10);
+ 141   2                      DAC_SCLK = 0;
+ 142   2                      reg=reg<<1;
+ 143   2                      i++;
+ 144   2              }while(i<24);
+ 145   1              DAC_SDENB=1;
+ 146   1      
+ 147   1      }
+ 148          /*---------------------------------------
+ 149          purpose:read AD
+ 150          parameters:
+ 151          modify:
+ 152          ----------------------------------------*/                                                                       
+ 153          uint read_DA(uint add)    
+ 154          {       
+ 155   1              idata uchar i=0;
+ 156   1              idata uint reg=0;
+ 157   1              idata uint da_temp,temp;        
+ 158   1      
+ 159   1              //DAC_SDIO = 0;         
+ 160   1              DAC_SDENB=1;
+ 161   1      
+ 162   1              reg=add+0x80;                   //8bit 
+ 163   1              DAC_SDENB=0;
+ 164   1                      
+ 165   1              do
+ 166   1              {
+ 167   2                      if((reg&0x80) == 0x80)
+ 168   2                              DAC_SDIO = 1;
+ 169   2                      else
+ 170   2                              DAC_SDIO = 0;
+ 171   2                      DAC_SCLK = 0;
+ 172   2                      delay(10);                                              //最小50ns
+ 173   2                      DAC_SCLK = 1;
+ 174   2                      delay(10);
+ 175   2                      DAC_SCLK = 0;
+ 176   2                      reg=reg<<1;
+ 177   2                      i++;
+C51 COMPILER V7.06   DAC38J84                                                              11/28/2016 13:19:35 PAGE 4   
+
+ 178   2              }while(i<8);
+ 179   1              i=0;
+ 180   1      
+ 181   1              DAC_SDO=1;
+ 182   1              do
+ 183   1              {
+ 184   2                      DAC_SCLK = 0;
+ 185   2                      delay(10);                                              //最小50ns
+ 186   2                      DAC_SCLK = 1;
+ 187   2                      da_temp=da_temp<<1;
+ 188   2                      temp=DAC_SDO;
+ 189   2                      da_temp=temp+da_temp;
+ 190   2                      delay(10);
+ 191   2                      DAC_SCLK = 0;
+ 192   2                      i++;
+ 193   2              }while(i<16);
+ 194   1              DAC_SDENB=1;
+ 195   1      
+ 196   1              return da_temp;
+ 197   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    688    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----       6
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----      12
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

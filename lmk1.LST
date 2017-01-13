@@ -1,0 +1,467 @@
+C51 COMPILER V7.06   LMK1                                                                  12/28/2016 17:59:02 PAGE 1   
+
+
+C51 COMPILER V7.06, COMPILATION OF MODULE LMK1
+OBJECT MODULE PLACED IN lmk1.OBJ
+COMPILER INVOKED BY: d:\Keil\C51\BIN\C51.EXE lmk1.c COMPACT BROWSE DEBUG OBJECTEXTEND
+
+stmt level    source
+
+   1          #include "C8051F340.h"
+   2          #define uchar unsigned char
+   3          #define uint  unsigned int
+   4          #define ulong unsigned long
+   5          
+   6          sbit LMK_RESET  = P2^3;         //output
+   7          sbit LMK_SYNC   = P2^4;         //output
+   8          sbit LMK_SCK    = P2^5;         //output
+   9          sbit LMK_SDIO   = P2^6;         //output
+  10          sbit LMK_CSB    = P2^7;         //output
+  11          
+  12          sbit STATUS_LD1 = P1^6; // input
+  13          sbit STATUS_LD2 = P1^7; // input
+  14          sbit CLKIN_SEL0 = P2^1; // input
+  15          sbit CLKIN_SEL1 = P2^2; // input
+  16          extern void delay(uint cnt);                     // 延时
+  17          
+  18          
+  19          void iniLMK04828(void);                  // 初始化LMK04828
+  20          uchar read_CLK04828(uint add);
+  21          void CLK_SPI04828(uint add, uchar num);
+  22          
+  23          /*---------------------------------------
+  24          purpose:初始化CLK
+  25          input:10M, output:2211.84M
+  26          
+  27          ----------------------------------------*/
+  28          
+  29          /*---------------------------------------
+  30          purpose:在CLK指定的地址写寄存器的值
+  31          parameters:
+  32          modify:
+  33          ----------------------------------------*/
+  34          //========================== Dec.1
+  35          void iniLMK04828(void)
+  36          {               idata uchar a=0;
+  37   1              
+  38   1              LMK_RESET  =0;  
+  39   1                      delay(5);
+  40   1                      LMK_RESET  =1;  
+  41   1              delay(5);
+  42   1                      LMK_RESET  =0;  
+  43   1                      delay(5);
+  44   1      
+  45   1      //a=read_CLK04828(0x13b);
+  46   1      //CLK_SPI04828(0x13b,0x12);
+  47   1      //a=read_CLK04828(0x13b);
+  48   1      
+  49   1      CLK_SPI04828(0X0000,0X80);//Programming register 0x000 with RESET = 1.
+  50   1      CLK_SPI04828(0X0002,0X00);// normal:0;powerdown:1//Programming registers in numeric order from 0x000 to 0x
+             -165.
+  51   1      // DCLK0
+  52   1      CLK_SPI04828(0X0100,0X18);      //0,1 138.24MHz,1/16,LVDS
+  53   1      CLK_SPI04828(0X0103,0X00);
+  54   1      CLK_SPI04828(0X0104,0X22);
+C51 COMPILER V7.06   LMK1                                                                  12/28/2016 17:59:02 PAGE 2   
+
+  55   1      CLK_SPI04828(0X0106,0X70);//sdclkout_pd=0 normal 
+  56   1      CLK_SPI04828(0X0107,0X11);       //format lvds,lvds
+  57   1      
+  58   1      //DCLK2
+  59   1      CLK_SPI04828(0X0108,0X18); //2,3  1105.926MHz,1/2,LVPECL
+  60   1      CLK_SPI04828(0X010b,0X00);
+  61   1      CLK_SPI04828(0X010c,0X22);
+  62   1      //CLK_SPI04828(0X010d,0X11);
+  63   1      CLK_SPI04828(0X010e,0X70);
+  64   1      CLK_SPI04828(0X010f,0X11);
+  65   1      
+  66   1      //DCLK4
+  67   1      CLK_SPI04828(0X0110,0X18); //4,5 2211.84MHZ,sin(LVPECL)
+  68   1      CLK_SPI04828(0X0113,0X00);
+  69   1      CLK_SPI04828(0X0114,0X22);
+  70   1      CLK_SPI04828(0X0116,0X70);
+  71   1      //CLK_SPI04828(0X0116,0X78);
+  72   1      CLK_SPI04828(0X0117,0X11);
+  73   1      
+  74   1      //DCLK6
+  75   1      CLK_SPI04828(0X0118,0X18);//6,7  2211.84MHZ,sin(LVPECL)
+  76   1      CLK_SPI04828(0X011b,0X00);
+  77   1      CLK_SPI04828(0X011c,0X22);
+  78   1      //CLK_SPI04828(0X011e,0X70);
+  79   1      CLK_SPI04828(0X011e,0X78);
+  80   1      CLK_SPI04828(0X011f,0X55);
+  81   1      
+  82   1      //DCLK8
+  83   1      CLK_SPI04828(0X0120,0X00);//PD
+  84   1      CLK_SPI04828(0X0123,0X00);
+  85   1      CLK_SPI04828(0X0124,0X20);
+  86   1      //CLK_SPI04828(0X0126,0X70); //sdclk pd
+  87   1      CLK_SPI04828(0X0126,0X78); 
+  88   1      CLK_SPI04828(0X0127,0X11);
+  89   1      
+  90   1      //DCLK10                                                         
+  91   1      CLK_SPI04828(0X0128,0X08); //PD
+  92   1      CLK_SPI04828(0X012b,0x00);
+  93   1      CLK_SPI04828(0X012c,0X20);      
+  94   1      //CLK_SPI04828(0X012e,0X70); //sdclk pd
+  95   1      CLK_SPI04828(0X012e,0X78); 
+  96   1      CLK_SPI04828(0X012f,0X11);
+  97   1      
+  98   1      //DCLK12
+  99   1      CLK_SPI04828(0X0130,0X0C);      // 12,13        138.24MHz ,1/16,LVDS
+ 100   1      CLK_SPI04828(0X0133,0X00);
+ 101   1      CLK_SPI04828(0X0134,0X22);
+ 102   1      CLK_SPI04828(0X0136,0X70);
+ 103   1      CLK_SPI04828(0X0137,0X55);
+ 104   1      
+ 105   1      /*
+ 106   1      //CLK_SPI04828(0X0169,0X5D);     //PLL2_CP_POLARITY 
+ 107   1      CLK_SPI04828(0X0138,0X21);         //vco=clkin1 ,LVDS
+ 108   1      CLK_SPI04828(0X0139,0X03);
+ 109   1      CLK_SPI04828(0X013A,0X01);
+ 110   1      CLK_SPI04828(0X013B,0X80);      
+ 111   1      CLK_SPI04828(0X013C,0X00);         //vco=clkin1 ,LVDS
+ 112   1      CLK_SPI04828(0X013D,0X08);
+ 113   1      CLK_SPI04828(0X013E,0X03);
+ 114   1      CLK_SPI04828(0X013F,0X00);
+ 115   1              
+ 116   1      CLK_SPI04828(0X0140,0X09);         //vco=clkin1 ,LVDS
+C51 COMPILER V7.06   LMK1                                                                  12/28/2016 17:59:02 PAGE 3   
+
+ 117   1      
+ 118   1      CLK_SPI04828(0X0141,0X00);
+ 119   1      CLK_SPI04828(0X0142,0X00);
+ 120   1      
+ 121   1      CLK_SPI04828(0X0143,0X91);      //SYNC_EN=1,SYSREF_CLR=1->0
+ 122   1      CLK_SPI04828(0X0143,0X11);  //SYNC_EN=1,SYSREF_CLR=0
+ 123   1              
+ 124   1      CLK_SPI04828(0X0144,0X00);         //vco=clkin1 ,LVDS
+ 125   1      CLK_SPI04828(0X0145,0X7F);
+ 126   1      CLK_SPI04828(0X0146,0X18);
+ 127   1      CLK_SPI04828(0X0147,0X1A);      
+ 128   1      CLK_SPI04828(0X0148,0X03);         //vco=clkin1 ,LVDS
+ 129   1      CLK_SPI04828(0X0149,0X42);
+ 130   1      CLK_SPI04828(0X014A,0X02);
+ 131   1      CLK_SPI04828(0X014B,0X16);      
+ 132   1      CLK_SPI04828(0X014C,0X00);         //vco=clkin1 ,LVDS
+ 133   1      CLK_SPI04828(0X014D,0X00);
+ 134   1      CLK_SPI04828(0X014E,0XC0);
+ 135   1      CLK_SPI04828(0X014F,0X7F);      
+ 136   1      CLK_SPI04828(0X0150,0X03);         //vco=clkin1 ,LVDS
+ 137   1      CLK_SPI04828(0X0151,0X02);
+ 138   1      CLK_SPI04828(0X0152,0X00);
+ 139   1      CLK_SPI04828(0X0153,0X00);      
+ 140   1      CLK_SPI04828(0X0154,0X78);         //vco=clkin1 ,LVDS
+ 141   1      CLK_SPI04828(0X0155,0X01);
+ 142   1      CLK_SPI04828(0X0156,0XF4);
+ 143   1      CLK_SPI04828(0X0157,0X00);      
+ 144   1      CLK_SPI04828(0X0158,0X96);         //vco=clkin1 ,LVDS
+ 145   1      CLK_SPI04828(0X0159,0X18);
+ 146   1      CLK_SPI04828(0X015A,0X00);
+ 147   1      CLK_SPI04828(0X015B,0XD4);      
+ 148   1      CLK_SPI04828(0X015C,0X20);         //vco=clkin1 ,LVDS
+ 149   1      CLK_SPI04828(0X015D,0X00);
+ 150   1      CLK_SPI04828(0X015E,0X00);
+ 151   1      
+ 152   1      //a=read_CLK04828(0x15F);
+ 153   1      CLK_SPI04828(0X015F,0X0B);//STATUS LD1
+ 154   1      //a=read_CLK04828(0x15F);
+ 155   1      
+ 156   1      CLK_SPI04828(0X0160,0X00);         //vco=clkin1 ,LVDS
+ 157   1      CLK_SPI04828(0X0161,0X01);
+ 158   1      CLK_SPI04828(0X0162,0X44);
+ 159   1      CLK_SPI04828(0X0163,0X00);      
+ 160   1      CLK_SPI04828(0X0164,0X00);         //vco=clkin1 ,LVDS
+ 161   1      CLK_SPI04828(0X0165,0X0C);
+ 162   1      
+ 163   1      CLK_SPI04828(0X0171,0XAA);
+ 164   1      CLK_SPI04828(0X0172,0X02);
+ 165   1      
+ 166   1      
+ 167   1      CLK_SPI04828(0X017C,0X15); //OPT_REG_1
+ 168   1      CLK_SPI04828(0X017D,0X33); //OPT_REG_2
+ 169   1              
+ 170   1      CLK_SPI04828(0X0166,0X00);       
+ 171   1      CLK_SPI04828(0X0167,0X00);
+ 172   1      CLK_SPI04828(0X0168,0X0C);
+ 173   1      CLK_SPI04828(0X0169,0X59);      
+ 174   1      CLK_SPI04828(0X016A,0X20);         //vco=clkin1 ,LVDS
+ 175   1      CLK_SPI04828(0X016B,0X00);
+ 176   1      CLK_SPI04828(0X016C,0X00);
+ 177   1      CLK_SPI04828(0X016D,0X00);
+ 178   1      
+C51 COMPILER V7.06   LMK1                                                                  12/28/2016 17:59:02 PAGE 4   
+
+ 179   1      //a=read_CLK04828(0x16E);
+ 180   1      CLK_SPI04828(0X016E,0X13); //STATUS LD2
+ 181   1      a=read_CLK04828(0x16E);
+ 182   1      
+ 183   1      CLK_SPI04828(0X0173,0X00);
+ 184   1      
+ 185   1      
+ 186   1      CLK_SPI04828(0X1FFD,0X0);
+ 187   1      CLK_SPI04828(0X1FFE,0X0);
+ 188   1      CLK_SPI04828(0X1FFF,0X53);      
+ 189   1      
+ 190   1      */
+ 191   1      //12.4
+ 192   1      
+ 193   1      CLK_SPI04828(0X0138,0X21);         //vco=clkin1 ,LVDS
+ 194   1      
+ 195   1      //CLK_SPI04828(0X013E,0X03); //no set in continus modes 
+ 196   1      //CLK_SPI04828(0X013F,0X14); //??delay 0 mode fb_mux=sysref div
+ 197   1      CLK_SPI04828(0X013F,0X00); //??
+ 198   1              
+ 199   1      //CLK_SPI04828(0X0140,0X09);     //?? 
+ 200   1      
+ 201   1      //CLK_SPI04828(0X0141,0X00);
+ 202   1      //CLK_SPI04828(0X0142,0X00);
+ 203   1      
+ 204   1      //CLK_SPI04828(0X0143,0X91);    //SYNC_EN=1,SYSREF_CLR=1->0
+ 205   1      //CLK_SPI04828(0X0143,0X11);  //SYNC_EN=1,SYSREF_CLR=0
+ 206   1              
+ 207   1      //CLK_SPI04828(0X0144,0X00);      
+ 208   1      CLK_SPI04828(0X0145,0X7F);
+ 209   1      CLK_SPI04828(0X0146,0X02);
+ 210   1      CLK_SPI04828(0X0147,0X1B);      
+ 211   1      CLK_SPI04828(0X0148,0X13);         //output(push pull)
+ 212   1      CLK_SPI04828(0X0149,0X53);
+ 213   1      CLK_SPI04828(0X014A,0X02);
+ 214   1      CLK_SPI04828(0X014B,0X16);      
+ 215   1      CLK_SPI04828(0X014C,0X00);         //vco=clkin1 ,LVDS
+ 216   1      CLK_SPI04828(0X014D,0X00);
+ 217   1      CLK_SPI04828(0X014E,0XC0);
+ 218   1      CLK_SPI04828(0X014F,0X7F);      
+ 219   1      CLK_SPI04828(0X0150,0X03);         //vco=clkin1 ,LVDS
+ 220   1      CLK_SPI04828(0X0151,0X02);
+ 221   1      CLK_SPI04828(0X0152,0X00);
+ 222   1      CLK_SPI04828(0X0153,0X00);      
+ 223   1      CLK_SPI04828(0X0154,0X78);         //vco=clkin1 ,LVDS
+ 224   1      CLK_SPI04828(0X0155,0X00);
+ 225   1      CLK_SPI04828(0X0156,0X7D);
+ 226   1      CLK_SPI04828(0X0157,0X00);      
+ 227   1      CLK_SPI04828(0X0158,0X96);         //vco=clkin1 ,LVDS
+ 228   1      CLK_SPI04828(0X0159,0X06);
+ 229   1      CLK_SPI04828(0X015A,0X00);
+ 230   1      CLK_SPI04828(0X015B,0XD4);      
+ 231   1      CLK_SPI04828(0X015C,0X20);         //vco=clkin1 ,LVDS
+ 232   1      CLK_SPI04828(0X015D,0X00);
+ 233   1      CLK_SPI04828(0X015E,0X00);
+ 234   1      
+ 235   1      //a=read_CLK04828(0x15F);
+ 236   1      CLK_SPI04828(0X015F,0X0B);//STATUS LD1
+ 237   1      //a=read_CLK04828(0x15F);
+ 238   1      
+ 239   1      CLK_SPI04828(0X0160,0X00);         //vco=clkin1 ,LVDS
+ 240   1      CLK_SPI04828(0X0161,0X01);
+C51 COMPILER V7.06   LMK1                                                                  12/28/2016 17:59:02 PAGE 5   
+
+ 241   1      CLK_SPI04828(0X0162,0X44);
+ 242   1      CLK_SPI04828(0X0163,0X00);      
+ 243   1      CLK_SPI04828(0X0164,0X00);         //vco=clkin1 ,LVDS
+ 244   1      CLK_SPI04828(0X0165,0X0C);
+ 245   1      
+ 246   1      CLK_SPI04828(0X0171,0XAA);
+ 247   1      CLK_SPI04828(0X0172,0X02);
+ 248   1      
+ 249   1      
+ 250   1      CLK_SPI04828(0X017C,0X15); //OPT_REG_1
+ 251   1      CLK_SPI04828(0X017D,0X33); //OPT_REG_2
+ 252   1              
+ 253   1      CLK_SPI04828(0X0166,0X00);       
+ 254   1      CLK_SPI04828(0X0167,0X00);
+ 255   1      CLK_SPI04828(0X0168,0X0C);
+ 256   1      CLK_SPI04828(0X0169,0X59);      
+ 257   1      //CLK_SPI04828(0X016A,0X20);       //vco=clkin1 ,LVDS
+ 258   1      CLK_SPI04828(0X016B,0X00);
+ 259   1      CLK_SPI04828(0X016C,0X00);
+ 260   1      CLK_SPI04828(0X016D,0X00);
+ 261   1      
+ 262   1      //a=read_CLK04828(0x16E);
+ 263   1      CLK_SPI04828(0X016E,0X13); //STATUS LD2
+ 264   1      a=read_CLK04828(0x16E);
+ 265   1      
+ 266   1      CLK_SPI04828(0X0173,0X00);
+ 267   1      
+ 268   1      
+ 269   1      CLK_SPI04828(0X1FFD,0X0);
+ 270   1      CLK_SPI04828(0X1FFE,0X0);
+ 271   1      CLK_SPI04828(0X1FFF,0X53);      
+ 272   1      //----------------------
+ 273   1      //step 1:
+ 274   1      CLK_SPI04828(0X0143,0X11);//sync_pol=0,sync_mode=1;
+ 275   1      CLK_SPI04828(0X0139,0X00);       //sysref_mux=0
+ 276   1      CLK_SPI04828(0X013a,0X01);   
+ 277   1      CLK_SPI04828(0X013b,0X80);       //sys=div384 = 7.68
+ 278   1      CLK_SPI04828(0X0140,0X09);//?SYSREF_PLSR_PD=0,sysref_pd=0,sysref_ddly_pd=0,      sysref_plsr_pd=0
+ 279   1      CLK_SPI04828(0X0143,0X91);       //sysref_clr=1;
+ 280   1      //------------------
+ 281   1      //step 2:
+ 282   1      CLK_SPI04828(0X0144,0X00);       //sysref_dis=0;
+ 283   1      
+ 284   1      CLK_SPI04828(0X0143,0XB1);       //sysref_pol=1then sysref_pol=0;
+ 285   1      CLK_SPI04828(0X0143,0X91);       //sysref_pol=1then sysref_pol=0;
+ 286   1      //-------------------
+ 287   1      //step 3:
+ 288   1      CLK_SPI04828(0X0144,0Xff);       //sysref_dis=1;
+ 289   1      //step 4:
+ 290   1      CLK_SPI04828(0X0143,0X11);       //sysref_clr=0;
+ 291   1      
+ 292   1      CLK_SPI04828(0X016a,0X20); //??
+ 293   1      //step 5:
+ 294   1      CLK_SPI04828(0X0143,0X11);       //0x12?? sync_mode=2;
+ 295   1      CLK_SPI04828(0X0139,0X03);        //0x02 sysref_mux=2
+ 296   1      
+ 297   1      //CLK_SPI04828(0X0143,0X91); //?
+ 298   1      //------------------------
+ 299   1      
+ 300   1      
+ 301   1      //CLK_SPI04828(0X0002,0X00);
+ 302   1      
+C51 COMPILER V7.06   LMK1                                                                  12/28/2016 17:59:02 PAGE 6   
+
+ 303   1      //=================
+ 304   1      /*
+ 305   1      //CLK_SPI04828(0X0139,0X03);      //sysref_mux=0
+ 306   1      //CLK_SPI04828(0X013a,0X01);
+ 307   1      //CLK_SPI04828(0X013b,0X80);       //sys=div192 00C0
+ 308   1      
+ 309   1      //CLK_SPI04828(0X0140,0X0F);      //pd mode  sysref_pd=0,sysref_ddly_pd=0,       sysref_plsr_pd=0
+ 310   1      //CLK_SPI04828(0X0143,0X11);     //sync_en=1;sysref_clr=1;
+ 311   1      
+ 312   1      //CLK_SPI04828(0X0144,0X00);     //sysref_dis=0;
+ 313   1      
+ 314   1      
+ 315   1      
+ 316   1      CLK_SPI04828(0X0145,0X7F);
+ 317   1      CLK_SPI04828(0X0147,0X1A);       //sync_mode=2;
+ 318   1      CLK_SPI04828(0X014B,0X16);        //sysref_mux=2
+ 319   1      
+ 320   1      
+ 321   1      CLK_SPI04828(0X014E,0XC0);
+ 322   1      CLK_SPI04828(0X0155,0X01);// clk1in
+ 323   1      CLK_SPI04828(0X0156,0XF4);
+ 324   1      CLK_SPI04828(0X0159,0X18);
+ 325   1      CLK_SPI04828(0X015A,0X00);       //RESET=INPUT  1
+ 326   1      CLK_SPI04828(0X015F,0X0B);
+ 327   1      CLK_SPI04828(0X0161,0X01);
+ 328   1      CLK_SPI04828(0X0162,0X24);
+ 329   1      CLK_SPI04828(0X017C,0X15);
+ 330   1      CLK_SPI04828(0X017D,0X33);
+ 331   1      CLK_SPI04828(0X016E,0X13);
+ 332   1      
+ 333   1      
+ 334   1      //CLK_SPI04828(0X016a,0X40);
+ 335   1      CLK_SPI04828(0X1FFD,0X0);
+ 336   1      CLK_SPI04828(0X1FFE,0X0);
+ 337   1      CLK_SPI04828(0X1FFF,0X53);              
+ 338   1      
+ 339   1      */
+ 340   1      
+ 341   1              }
+ 342          
+ 343          //==========================
+ 344           
+ 345          /*---------------------------------------
+ 346          purpose:在CLK指定的地址写寄存器的值
+ 347          parameters:
+ 348          modify:
+ 349          ----------------------------------------*/
+ 350          void CLK_SPI04828(uint add, uchar num)
+ 351          {       
+ 352   1              idata uchar i=0;
+ 353   1              idata ulong reg=0;
+ 354   1      
+ 355   1              LMK_SDIO = 0;
+ 356   1              LMK_CSB=1;
+ 357   1              reg=add;
+ 358   1              reg=reg<<8;
+ 359   1              reg=reg+num;
+ 360   1              LMK_CSB=0;
+ 361   1              do
+ 362   1              {
+ 363   2                      if((reg&0x800000) == 0x800000)
+ 364   2                              LMK_SDIO = 1;
+C51 COMPILER V7.06   LMK1                                                                  12/28/2016 17:59:02 PAGE 7   
+
+ 365   2                      else
+ 366   2                              LMK_SDIO = 0;
+ 367   2                      LMK_SCK = 0;
+ 368   2                      delay(10);                                              //最小50ns
+ 369   2                      LMK_SCK= 1;
+ 370   2                      delay(10);
+ 371   2                      LMK_SCK = 0;
+ 372   2                      reg=reg<<1;
+ 373   2                      i++;
+ 374   2              }while(i<24);
+ 375   1              LMK_CSB=1;
+ 376   1      }
+ 377          /*---------------------------------------
+ 378          purpose:read CLK
+ 379          parameters:
+ 380          modify:
+ 381          ----------------------------------------*/                                                                       
+ 382          uchar read_CLK04828(uint add)
+ 383          {       
+ 384   1              idata uchar i=0;
+ 385   1              idata uint reg=0;
+ 386   1              idata uchar da_temp,temp;
+ 387   1                      
+ 388   1              LMK_CSB=1;
+ 389   1              reg=add+0x8000;                                         //16bit instruction
+ 390   1              LMK_SDIO = 0;
+ 391   1              LMK_CSB=0;
+ 392   1              do                                                                      
+ 393   1              {
+ 394   2                      if((reg&0x8000) == 0x8000)
+ 395   2                              LMK_SDIO = 1;
+ 396   2                      else
+ 397   2                              LMK_SDIO = 0;
+ 398   2                      LMK_SCK = 0;
+ 399   2                      delay(10);                                              //最小50ns
+ 400   2                      LMK_SCK = 1;
+ 401   2                      delay(10);
+ 402   2                      LMK_SCK = 0;
+ 403   2                      reg=reg<<1;
+ 404   2                      i++;
+ 405   2              }while(i<16);
+ 406   1      
+ 407   1              i=0;
+ 408   1      
+ 409   1         P2MDOUT  = 0xb8;                    //output,p2.6 input
+ 410   1         P2       = 0x40;
+ 411   1      
+ 412   1              do
+ 413   1              {
+ 414   2                      LMK_SCK = 0;
+ 415   2                      delay(10);                                              //最小50ns
+ 416   2                      LMK_SCK = 1;
+ 417   2                      da_temp=da_temp<<1;
+ 418   2                      temp=LMK_SDIO;
+ 419   2                      da_temp=temp+da_temp;
+ 420   2                      delay(10);
+ 421   2                      LMK_SCK = 0;
+ 422   2                      i++;
+ 423   2              }while(i<8);
+ 424   1              LMK_CSB=1;
+ 425   1      
+ 426   1         P2MDOUT  = 0xf8;                    //output
+C51 COMPILER V7.06   LMK1                                                                  12/28/2016 17:59:02 PAGE 8   
+
+ 427   1         P2       = 0x00;
+ 428   1              return da_temp;
+ 429   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1261    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----       1
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----      11
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

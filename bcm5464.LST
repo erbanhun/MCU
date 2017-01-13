@@ -1,0 +1,344 @@
+C51 COMPILER V7.06   BCM5464                                                               11/28/2016 13:19:34 PAGE 1   
+
+
+C51 COMPILER V7.06, COMPILATION OF MODULE BCM5464
+OBJECT MODULE PLACED IN bcm5464.OBJ
+COMPILER INVOKED BY: d:\Keil\C51\BIN\C51.EXE bcm5464.c COMPACT BROWSE DEBUG OBJECTEXTEND
+
+stmt level    source
+
+   1          #include "C8051F340.h"
+   2          #define uchar unsigned char
+   3          #define uint  unsigned int
+   4          #define ulong unsigned long
+   5          
+   6          //sbit BCM_RESET        = P1^0;         //output
+   7          sbit BCM_MDIO1  = P0^5;         //output
+   8          sbit BCM_MDIO2  = P0^4;         //output
+   9          sbit BCM_MDIO3  = P0^7;         //output
+  10          sbit BCM_MDIO4  = P0^6;         //output
+  11          sbit BCM_MDC1   = P0^3;         //output
+  12          sbit BCM_MDC2   = P0^2;         //output
+  13          sbit BCM_MDC3   = P0^1;         //output
+  14          sbit BCM_MDC4   = P0^0;         //output
+  15          
+  16          //Start of Frame 2 bits
+  17          #define ST       0x01
+  18          //Operation Code 2 bits
+  19          #define OP_READ  0x02
+  20          #define OP_WRITE 0x01
+  21          //PHY Address 5 bits
+  22          #define PHYAD1   0x1C
+  23          #define PHYAD2   0x1D
+  24          #define PHYAD3   0x1E
+  25          #define PHYAD4   0x1F
+  26          //Register Address 5bits
+  27          //Turnaround 2bits
+  28          #define TA               0x2
+  29          
+  30          
+  31          /////////BCM5464 Register Map-START////////////////
+  32          #define MII_Control                                     0x00
+  33          #define MII_Status                                      0x01
+  34          #define PHY_ID1                                                 0x02
+  35          #define PHY_ID2                                                 0x03
+  36          #define Auto_Nego_Advertisement                 0x04
+  37          #define Auto_Nego_Link_Partner                  0x05
+  38          #define Auto_Nego_Expansion                     0x06
+  39          #define Next_Page_Transmit                      0x07
+  40          #define Link_Partner_Received_Next_Page 0x08
+  41          #define Control                                         0x09
+  42          #define Status                                          0x0A
+  43          //0Ch-0Eh Reserved
+  44          #define IEEE_Extended_Status                    0x0f
+  45          #define PHY_Extended_Control                    0x10
+  46          #define PHY_Extended_Status                     0x11
+  47          #define Receive_Error_Counter                   0x12
+  48          #define False_Carrier_Sense_Counter     0x13
+  49          #define Receiver_NOT_OK_Counter                 0x14
+  50          //15h-16h Reserved
+  51          #define Expansion_Reg_Access                    0x17
+  52          //0x18 Shadow Value
+  53          #define Auxiliary_Control                       0x18
+  54          #define Auxiliary_Status_Summary                0x19
+  55          #define Interrupt_Status                        0x1A
+C51 COMPILER V7.06   BCM5464                                                               11/28/2016 13:19:34 PAGE 2   
+
+  56          #define Interrupt_Mask                          0x1B
+  57          //0x1C  Shadow Value
+  58          #define  Spare_Led_Control                      0x1C
+  59          #define MS_Seed_HCD_Status                      0x1D
+  60          #define Test                                    0x1E
+  61          //1Fh Reserved
+  62          /////////BCM5464 Register Map-END////////////////
+  63          
+  64          //
+  65          void bcm5464_Write1(uint dat,uchar REGAD);
+  66          void bcm5464_Write2(uint dat,uchar REGAD);
+  67          void bcm5464_Write3(uint dat,uchar REGAD);
+  68          void bcm5464_Write4(uint dat,uchar REGAD);
+  69          uint bcm5464_Read1(uchar REGAD);
+  70          extern void delay(uint cnt);                     // 延时
+  71          
+  72          /*---------------------------------------
+  73          purpose: 写BCM5464 PORT1 寄存器值
+  74          parameters:
+  75          modify:
+  76          ----------------------------------------*/
+  77          void bcm5464_Write1(uint dat,uchar REGAD)
+  78          {
+  79   1              idata uint tmp2;
+  80   1              ulong sedata,tmp;//32bits
+  81   1          uchar i;
+  82   1              tmp=ST;
+  83   1              tmp=tmp<<30;
+  84   1              sedata = tmp;
+  85   1              tmp=OP_WRITE;
+  86   1              tmp=tmp<<28;
+  87   1              sedata=sedata+tmp;
+  88   1              tmp=PHYAD1;
+  89   1              tmp=tmp<<23;
+  90   1              sedata=sedata+tmp;
+  91   1              tmp=REGAD;
+  92   1              tmp=tmp<<18;
+  93   1              sedata=sedata+tmp;
+  94   1              tmp=TA;
+  95   1              tmp=tmp<<16;
+  96   1              sedata=sedata+tmp;
+  97   1              tmp2=dat;
+  98   1              sedata=sedata+tmp2;
+  99   1      
+ 100   1          BCM_MDC1  = 0;
+ 101   1              BCM_MDIO1 = 0;
+ 102   1          for(i = 0;i < 64;i++)
+ 103   1          {
+ 104   2              if(i<32)
+ 105   2                      {
+ 106   3                              BCM_MDIO1 = 1;
+ 107   3                      }
+ 108   2                      else
+ 109   2                      {
+ 110   3                              BCM_MDIO1 = ((sedata & 0x80000000)?1:0); // 输出数据
+ 111   3                              sedata <<= 1;
+ 112   3                      }
+ 113   2                      delay(5);
+ 114   2              BCM_MDC1  = 1;        // 上升沿数据锁存
+ 115   2              delay(5);
+ 116   2                      BCM_MDC1  = 0;
+ 117   2              
+C51 COMPILER V7.06   BCM5464                                                               11/28/2016 13:19:34 PAGE 3   
+
+ 118   2          }
+ 119   1      }
+ 120          /*---------------------------------------
+ 121          purpose: 读BCM5464 PORT1 寄存器值
+ 122          parameters:
+ 123          modify:
+ 124          ----------------------------------------*/
+ 125          uint bcm5464_Read1(uchar REGAD)
+ 126          {
+ 127   1              ulong sedata,tmp;//32bits
+ 128   1              uint read_dat;
+ 129   1              uint read_bit;
+ 130   1          uchar i;
+ 131   1              sedata = ST;
+ 132   1              sedata=sedata<<30;
+ 133   1              tmp=OP_READ;
+ 134   1              tmp=tmp<<28;
+ 135   1              sedata = sedata+tmp;
+ 136   1              tmp=PHYAD1;
+ 137   1              tmp=tmp<<23;
+ 138   1              sedata = sedata+tmp;
+ 139   1              tmp=REGAD;
+ 140   1              tmp=tmp<<18;
+ 141   1              sedata = sedata+tmp;
+ 142   1          BCM_MDC1  = 0;
+ 143   1          for(i = 0;i < 46;i++)
+ 144   1          {
+ 145   2              if(i<32)
+ 146   2                      {
+ 147   3                              BCM_MDIO1 = 1;
+ 148   3                      }
+ 149   2                      else
+ 150   2                      {
+ 151   3                              BCM_MDIO1 = ((sedata & 0x80000000)?1:0); // 输出数据
+ 152   3                              sedata <<= 1;
+ 153   3                      }
+ 154   2              delay(5);
+ 155   2                      BCM_MDC1  = 1;        // 上升沿数据锁存
+ 156   2                      delay(5);
+ 157   2              BCM_MDC1  = 0;
+ 158   2          }
+ 159   1      
+ 160   1          BCM_MDC1  = 0;
+ 161   1              P0MDOUT   = 0xDF;  //set P0^5 input
+ 162   1              BCM_MDIO1 = 1;
+ 163   1              read_dat  = 0;
+ 164   1              read_bit=0;
+ 165   1              for(i = 0;i < 17;i++)
+ 166   1          {   
+ 167   2                      delay(5);
+ 168   2              BCM_MDC1  = 1;        // 上升沿数据锁存
+ 169   2                      delay(5);
+ 170   2                      BCM_MDC1  = 0;       
+ 171   2                      
+ 172   2                      {
+ 173   3                              read_dat=read_dat<<1;
+ 174   3                              read_bit=BCM_MDIO1;
+ 175   3                      read_dat=read_dat+read_bit;
+ 176   3                              
+ 177   3                      }
+ 178   2      
+ 179   2          }
+C51 COMPILER V7.06   BCM5464                                                               11/28/2016 13:19:34 PAGE 4   
+
+ 180   1              P0MDOUT  = 0xff;
+ 181   1              return read_dat;
+ 182   1      }
+ 183          void bcm5464_Write2(uint dat,uchar REGAD)
+ 184          {
+ 185   1              idata uint tmp2;
+ 186   1              ulong sedata,tmp;//32bits
+ 187   1          uchar i;
+ 188   1              tmp=ST;
+ 189   1              tmp=tmp<<30;
+ 190   1              sedata = tmp;
+ 191   1              tmp=OP_WRITE;
+ 192   1              tmp=tmp<<28;
+ 193   1              sedata=sedata+tmp;
+ 194   1              tmp=PHYAD2;
+ 195   1              tmp=tmp<<23;
+ 196   1              sedata=sedata+tmp;
+ 197   1              tmp=REGAD;
+ 198   1              tmp=tmp<<18;
+ 199   1              sedata=sedata+tmp;
+ 200   1              tmp=TA;
+ 201   1              tmp=tmp<<16;
+ 202   1              sedata=sedata+tmp;
+ 203   1              tmp2=dat;
+ 204   1              sedata=sedata+tmp2;
+ 205   1      
+ 206   1          BCM_MDC2  = 0;
+ 207   1              BCM_MDIO2 = 0;
+ 208   1          for(i = 0;i < 64;i++)
+ 209   1          {
+ 210   2              if(i<32)
+ 211   2                      {
+ 212   3                              BCM_MDIO2 = 1;
+ 213   3                      }
+ 214   2                      else
+ 215   2                      {
+ 216   3                              BCM_MDIO2 = ((sedata & 0x80000000)?1:0); // 输出数据
+ 217   3                              sedata <<= 1;
+ 218   3                      }
+ 219   2                      delay(5);
+ 220   2              BCM_MDC2  = 1;        // 上升沿数据锁存
+ 221   2              delay(5);
+ 222   2                      BCM_MDC2  = 0;
+ 223   2              
+ 224   2          }
+ 225   1      }
+ 226          void bcm5464_Write3(uint dat,uchar REGAD)
+ 227          {
+ 228   1              idata uint tmp2;
+ 229   1              ulong sedata,tmp;//32bits
+ 230   1          uchar i;
+ 231   1              tmp=ST;
+ 232   1              tmp=tmp<<30;
+ 233   1              sedata = tmp;
+ 234   1              tmp=OP_WRITE;
+ 235   1              tmp=tmp<<28;
+ 236   1              sedata=sedata+tmp;
+ 237   1              tmp=PHYAD3;
+ 238   1              tmp=tmp<<23;
+ 239   1              sedata=sedata+tmp;
+ 240   1              tmp=REGAD;
+ 241   1              tmp=tmp<<18;
+C51 COMPILER V7.06   BCM5464                                                               11/28/2016 13:19:34 PAGE 5   
+
+ 242   1              sedata=sedata+tmp;
+ 243   1              tmp=TA;
+ 244   1              tmp=tmp<<16;
+ 245   1              sedata=sedata+tmp;
+ 246   1              tmp2=dat;
+ 247   1              sedata=sedata+tmp2;
+ 248   1      
+ 249   1          BCM_MDC3  = 0;
+ 250   1              BCM_MDIO3 = 0;
+ 251   1          for(i = 0;i < 64;i++)
+ 252   1          {
+ 253   2              if(i<32)
+ 254   2                      {
+ 255   3                              BCM_MDIO3 = 1;
+ 256   3                      }
+ 257   2                      else
+ 258   2                      {
+ 259   3                              BCM_MDIO3 = ((sedata & 0x80000000)?1:0); // 输出数据
+ 260   3                              sedata <<= 1;
+ 261   3                      }
+ 262   2                      delay(5);
+ 263   2              BCM_MDC3  = 1;        // 上升沿数据锁存
+ 264   2              delay(5);
+ 265   2                      BCM_MDC3  = 0;
+ 266   2              
+ 267   2          }
+ 268   1      }
+ 269          void bcm5464_Write4(uint dat,uchar REGAD)
+ 270          {
+ 271   1              idata uint tmp2;
+ 272   1              ulong sedata,tmp;//32bits
+ 273   1          uchar i;
+ 274   1              tmp=ST;
+ 275   1              tmp=tmp<<30;
+ 276   1              sedata = tmp;
+ 277   1              tmp=OP_WRITE;
+ 278   1              tmp=tmp<<28;
+ 279   1              sedata=sedata+tmp;
+ 280   1              tmp=PHYAD4;
+ 281   1              tmp=tmp<<23;
+ 282   1              sedata=sedata+tmp;
+ 283   1              tmp=REGAD;
+ 284   1              tmp=tmp<<18;
+ 285   1              sedata=sedata+tmp;
+ 286   1              tmp=TA;
+ 287   1              tmp=tmp<<16;
+ 288   1              sedata=sedata+tmp;
+ 289   1              tmp2=dat;
+ 290   1              sedata=sedata+tmp2;
+ 291   1      
+ 292   1          BCM_MDC4  = 0;
+ 293   1              BCM_MDIO4 = 0;
+ 294   1          for(i = 0;i < 64;i++)
+ 295   1          {
+ 296   2              if(i<32)
+ 297   2                      {
+ 298   3                              BCM_MDIO4 = 1;
+ 299   3                      }
+ 300   2                      else
+ 301   2                      {
+ 302   3                              BCM_MDIO4 = ((sedata & 0x80000000)?1:0); // 输出数据
+ 303   3                              sedata <<= 1;
+C51 COMPILER V7.06   BCM5464                                                               11/28/2016 13:19:34 PAGE 6   
+
+ 304   3                      }
+ 305   2                      delay(5);
+ 306   2              BCM_MDC4  = 1;        // 上升沿数据锁存
+ 307   2              delay(5);
+ 308   2                      BCM_MDC4  = 0;
+ 309   2              
+ 310   2          }
+ 311   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   2462    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----      52
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----       8
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

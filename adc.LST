@@ -1,0 +1,245 @@
+C51 COMPILER V7.06   ADC                                                                   12/28/2016 17:59:02 PAGE 1   
+
+
+C51 COMPILER V7.06, COMPILATION OF MODULE ADC
+OBJECT MODULE PLACED IN adc.OBJ
+COMPILER INVOKED BY: d:\Keil\C51\BIN\C51.EXE adc.c COMPACT BROWSE DEBUG OBJECTEXTEND
+
+stmt level    source
+
+   1          #include "C8051F340.h"
+   2          #define uchar unsigned char
+   3          #define uint  unsigned int
+   4          #define ulong unsigned long
+   5          
+   6          sbit AD_SCK  = P1^1;            //output
+   7          sbit AD_SDIO   = P1^2;          //output
+   8          sbit AD_CSB    = P1^3;          //output
+   9          sbit AD_AGC1   = P1^4;          //output
+  10          sbit AD_AGC2    = P1^5;         //output
+  11          
+  12          
+  13          extern void delay(uint cnt);                     // 延时
+  14          
+  15          
+  16          void iniAD6676(void);                    // 初始化LMK04828
+  17          uchar read_AD6676(uint add);
+  18          void CLK_SPIAD6676(uint add, uchar num);
+  19          
+  20          void iniAD6676(void)
+  21          {
+  22   1      idata uchar a,b,c;
+  23   1      uint            i=0;
+  24   1      a=0;b=0;c=0;
+  25   1      //CLK_SPIAD6676(0x000,0x88);
+  26   1      //CLK_SPIAD6676(0x000,0x00);
+  27   1      /*a=read_AD6676(0x003);
+  28   1      a=read_AD6676(0x101);
+  29   1      CLK_SPIAD6676(0x101,0x1F);
+  30   1      a=read_AD6676(0x101);
+  31   1      */
+  32   1      // reset spi
+  33   1      CLK_SPIAD6676(0x000,0x99); // 3-wire spi
+  34   1      CLK_SPIAD6676(0x000,0x81); // 
+  35   1      delay(80);      //2ms
+  36   1      
+  37   1      // set ext RF clk init -TABLE28
+  38   1      /*CLK_SPIAD6676(0x2A5,0x05); 
+  39   1      CLK_SPIAD6676(0x2A0,0xC0); 
+  40   1      */
+  41   1      
+  42   1      // set CLK SYN ??
+  43   1      CLK_SPIAD6676(0x2A1,0x60); //
+  44   1      CLK_SPIAD6676(0x2A2,0x00); //
+  45   1      CLK_SPIAD6676(0x2A5,0x08); //
+  46   1      CLK_SPIAD6676(0x2AA,0x37 ); //
+  47   1      CLK_SPIAD6676(0x2AC,0x18 ); //
+  48   1      CLK_SPIAD6676(0x2B7,0xF0); //
+  49   1      CLK_SPIAD6676(0x2BB,0x8D ); //
+  50   1      CLK_SPIAD6676(0x2A0,0x7D); //
+  51   1      CLK_SPIAD6676(0x2AB,0xC5); //
+  52   1      delay(1);
+  53   1      a = read_AD6676(0x2bc);
+  54   1      /*a = a&0x02;
+  55   1      if(a==0x00){ 
+C51 COMPILER V7.06   ADC                                                                   12/28/2016 17:59:02 PAGE 2   
+
+  56   1              //printf("VCO cal.\n");
+  57   1              delay(1);
+  58   1              a = read_AD6676(0x2bc);
+  59   1              }
+  60   1      */
+  61   1      
+  62   1      //
+  63   1      CLK_SPIAD6676(0x1E7,0x00); // LVCOMS input for SYNC
+  64   1      CLK_SPIAD6676(0x1C0,0x00); //  DID=0
+  65   1      CLK_SPIAD6676(0x1C1,0x00); // BID=12??
+  66   1      CLK_SPIAD6676(0x1C3,0x01); // SCR=0 L=2
+  67   1      CLK_SPIAD6676(0x1C4,0x01); // F=2
+  68   1      CLK_SPIAD6676(0x1C5,0x1f); // K=32
+  69   1      //
+  70   1      CLK_SPIAD6676(0x1EC,0xBD); // 
+  71   1      CLK_SPIAD6676(0x100,0x85); // Fadc=2949MHZ
+  72   1      CLK_SPIAD6676(0x101,0x0B); //
+  73   1      CLK_SPIAD6676(0x102,0x5E); // IF=350M
+  74   1      CLK_SPIAD6676(0x103,0x01); //
+  75   1      CLK_SPIAD6676(0x104,0xA0); // BW 0 =160M
+  76   1      CLK_SPIAD6676(0x105,0x00); // BW 1 = 0
+  77   1      CLK_SPIAD6676(0x106,0x13); // Lext = 19nH
+  78   1      CLK_SPIAD6676(0x107,0x0A); // MRGN_L=10M
+  79   1      CLK_SPIAD6676(0x108,0x01); // MRGN_u=10M
+  80   1      CLK_SPIAD6676(0x109,0x01); // MRGN_IF=1M
+  81   1      CLK_SPIAD6676(0x10A,0x40); // IDAC1=4mA
+  82   1      
+  83   1      for(i=0;i<2;i++){
+  84   2              CLK_SPIAD6676(0x140,0x01); // 
+  85   2              CLK_SPIAD6676(0x116,0x0A); // INIT RESON1 CAL
+  86   2              
+  87   2              delay(12000); // 2949M set 300MS
+  88   2              a = 0x00;
+  89   2              a = read_AD6676(0x117);
+  90   2              a = a & 0x01;
+  91   2              if(a==0x00){
+  92   3                      CLK_SPIAD6676(0x11A,0x01); //
+  93   3                      CLK_SPIAD6676(0x11A,0x00); //
+  94   3                      }
+  95   2              else break;
+  96   2              }
+  97   1      CLK_SPIAD6676(0x140,0x04); // dec_mode=4 - 12
+  98   1      //CLK_SPIAD6676(0x116,0x17); 
+  99   1      
+ 100   1      //delay(??) // 300ms
+ 101   1      for(i=0;i<2;i++){
+ 102   2              CLK_SPIAD6676(0x116,0x17); // cal & init ADC / init JESD
+ 103   2              delay(12000); // 2949M set 300MS
+ 104   2              a = 0x00;
+ 105   2              a = read_AD6676(0x117);
+ 106   2              a = a & 0x01;
+ 107   2              if(a==0x00){
+ 108   3                      CLK_SPIAD6676(0x11A,0x01); //
+ 109   3                      CLK_SPIAD6676(0x11A,0x00); //
+ 110   3                      }
+ 111   2              else break;
+ 112   2              }       
+ 113   1      // SPI AGC init 
+ 114   1      CLK_SPIAD6676(0x181,0x00); //00
+ 115   1      CLK_SPIAD6676(0x182,0x06); //06
+ 116   1      CLK_SPIAD6676(0x19E,0x13); //
+ 117   1      CLK_SPIAD6676(0x19B,0x04); //
+C51 COMPILER V7.06   ADC                                                                   12/28/2016 17:59:02 PAGE 3   
+
+ 118   1      CLK_SPIAD6676(0x19C,0x06); //
+ 119   1      CLK_SPIAD6676(0x193,0x00); //
+ 120   1      CLK_SPIAD6676(0x194,0x0D); //
+ 121   1      CLK_SPIAD6676(0x197,0x00); //
+ 122   1      CLK_SPIAD6676(0x198,0x09); //
+ 123   1      CLK_SPIAD6676(0x19A,0x02); //
+ 124   1      // SPI SHUFFLER INIT
+ 125   1      CLK_SPIAD6676(0x342,0x0F5); //
+ 126   1      CLK_SPIAD6676(0x343,0xFF); //
+ 127   1      // PlL lock??
+ 128   1      
+ 129   1      c = read_AD6676(0x2DC);
+ 130   1      b = read_AD6676(0x2BC);
+ 131   1      c = read_AD6676(0x141);
+ 132   1      b = read_AD6676(0x142);
+ 133   1      delay(1);
+ 134   1      
+ 135   1      }
+ 136          
+ 137          void CLK_SPIAD6676(uint add, uchar num)
+ 138          {       
+ 139   1              idata uchar i=0;
+ 140   1              idata ulong reg=0;
+ 141   1      
+ 142   1              AD_SDIO = 0;
+ 143   1              AD_CSB=1;
+ 144   1              reg=add;
+ 145   1              reg=reg<<8;
+ 146   1              reg=reg+num;
+ 147   1              AD_CSB=0;
+ 148   1              do
+ 149   1              {
+ 150   2                      if((reg&0x800000) == 0x800000)
+ 151   2                              AD_SDIO = 1;
+ 152   2                      else
+ 153   2                              AD_SDIO = 0;
+ 154   2                      AD_SCK = 0;
+ 155   2                      delay(10);                                              //最小50ns
+ 156   2                      AD_SCK= 1;
+ 157   2                      delay(10);
+ 158   2                      AD_SCK = 0;
+ 159   2                      reg=reg<<1;
+ 160   2                      i++;
+ 161   2              }while(i<24);
+ 162   1              AD_CSB=1;
+ 163   1      }
+ 164          /*---------------------------------------
+ 165          purpose:read CLK
+ 166          parameters:
+ 167          modify:
+ 168          ----------------------------------------*/                                                                       
+ 169          uchar read_AD6676(uint add)
+ 170          {       
+ 171   1              idata uchar i=0;
+ 172   1              idata uint reg=0;
+ 173   1              idata uchar da_temp,temp;
+ 174   1                      
+ 175   1              AD_CSB=1;
+ 176   1              reg=add+0x8000;                                         //16bit instruction
+ 177   1              AD_SDIO = 0;
+ 178   1              AD_CSB=0;
+ 179   1              do                                                                      
+C51 COMPILER V7.06   ADC                                                                   12/28/2016 17:59:02 PAGE 4   
+
+ 180   1              {
+ 181   2                      if((reg&0x8000) == 0x8000)
+ 182   2                              AD_SDIO = 1;
+ 183   2                      else
+ 184   2                              AD_SDIO = 0;
+ 185   2                      AD_SCK = 0;
+ 186   2                      delay(10);                                              //最小50ns
+ 187   2                      AD_SCK = 1;
+ 188   2                      delay(10);
+ 189   2                      AD_SCK = 0;
+ 190   2                      reg=reg<<1;
+ 191   2                      i++;
+ 192   2              }while(i<16);
+ 193   1      
+ 194   1              i=0;
+ 195   1      
+ 196   1         P1MDOUT  = 0x0B;                    //output,p2.6 input
+ 197   1         P1       = 0x04;
+ 198   1      
+ 199   1              do
+ 200   1              {
+ 201   2                      AD_SCK = 0;
+ 202   2                      delay(10);                                              //最小50ns
+ 203   2                      AD_SCK = 1;
+ 204   2                      da_temp=da_temp<<1;
+ 205   2                      temp=AD_SDIO;
+ 206   2                      da_temp=temp+da_temp;
+ 207   2                      //delay(10);
+ 208   2                      AD_SCK = 0;
+ 209   2                      i++;
+ 210   2              }while(i<8);
+ 211   1              AD_CSB=1;
+ 212   1      
+ 213   1         P1MDOUT  = 0x0f;                    //output
+ 214   1         P1       = 0x00;
+ 215   1              return da_temp;
+ 216   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    920    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----       3
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----      13
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

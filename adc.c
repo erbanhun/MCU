@@ -3,52 +3,46 @@
 #define uint  unsigned int
 #define ulong unsigned long
 
-sbit AD_SCK  = P1^1;		//output
+sbit AD_SCK    = P1^1;		//output
 sbit AD_SDIO   = P1^2;		//output
 sbit AD_CSB    = P1^3;		//output
-sbit AD_AGC1   = P1^4;		//output
-sbit AD_AGC2    = P1^5;		//output
+sbit AD_AGC1   = P1^4;		//input
+sbit AD_AGC2   = P1^5;		//input
 
 
 extern void delay(uint cnt);			 // 延时
 
 
 void iniAD6676(void);			 // 初始化LMK04828
-uchar read_AD6676(uint add);
-void CLK_SPIAD6676(uint add, uchar num);
+uchar read_AD6676(uint add);	// 读取寄存器数值
+void CLK_SPIAD6676(uint add, uchar num); //写寄存器数值
 
 void iniAD6676(void)
 {
-idata uchar a,b,c;
-uint		i=0;
-a=0;b=0;c=0;
-//CLK_SPIAD6676(0x000,0x88);
-//CLK_SPIAD6676(0x000,0x00);
-/*a=read_AD6676(0x003);
-a=read_AD6676(0x101);
-CLK_SPIAD6676(0x101,0x1F);
-a=read_AD6676(0x101);
-*/
+	idata uchar a,b,c;
+	uint		i=0;
+	a=0;b=0;c=0;
+
 // reset spi
-CLK_SPIAD6676(0x000,0x99); // 3-wire spi
-CLK_SPIAD6676(0x000,0x81); // 
-delay(80);	//2ms
+//CLK_SPIAD6676(0x000,0x99); 
+CLK_SPIAD6676(0x000,0x81); // 3-wire spi
+delay(80);		//2ms for SPI initialization
 
 // set ext RF clk init -TABLE28
 /*CLK_SPIAD6676(0x2A5,0x05); 
 CLK_SPIAD6676(0x2A0,0xC0); 
 */
 
-// set CLK SYN ??
-CLK_SPIAD6676(0x2A1,0x60); //
+// SPI CLK SYN Initialization
+CLK_SPIAD6676(0x2A1,0x60); //Set the integer-N value: 96
 CLK_SPIAD6676(0x2A2,0x00); //
-CLK_SPIAD6676(0x2A5,0x08); //
-CLK_SPIAD6676(0x2AA,0x37 ); //
-CLK_SPIAD6676(0x2AC,0x18 ); //
-CLK_SPIAD6676(0x2B7,0xF0); //
-CLK_SPIAD6676(0x2BB,0x8D ); //
-CLK_SPIAD6676(0x2A0,0x7D); //
-CLK_SPIAD6676(0x2AB,0xC5); //
+CLK_SPIAD6676(0x2A5,0x08); //Reset VCO calibration. 
+CLK_SPIAD6676(0x2AA,0x37 ); //VCO Configuration
+CLK_SPIAD6676(0x2AC,0x18 ); //Charge Pump Current 
+CLK_SPIAD6676(0x2B7,0xF0); //VCO Configuration
+CLK_SPIAD6676(0x2BB,0x8D ); //reference divider to DIV=4
+CLK_SPIAD6676(0x2A0,0x7D); //Enable CLKSYN and the ADC clock. 
+CLK_SPIAD6676(0x2AB,0xC5); //Start VCO calibration.
 delay(1);
 a = read_AD6676(0x2bc);
 /*a = a&0x02;
@@ -62,7 +56,7 @@ if(a==0x00){
 //
 CLK_SPIAD6676(0x1E7,0x00); // LVCOMS input for SYNC
 CLK_SPIAD6676(0x1C0,0x00); //  DID=0
-CLK_SPIAD6676(0x1C1,0x00); // BID=12??
+CLK_SPIAD6676(0x1C1,0x00); // BID
 CLK_SPIAD6676(0x1C3,0x01); // SCR=0 L=2
 CLK_SPIAD6676(0x1C4,0x01); // F=2
 CLK_SPIAD6676(0x1C5,0x1f); // K=32
@@ -111,8 +105,8 @@ for(i=0;i<2;i++){
 	else break;
 	}	
 // SPI AGC init 
-CLK_SPIAD6676(0x181,0x00); //00
-CLK_SPIAD6676(0x182,0x06); //06
+CLK_SPIAD6676(0x181,0x00); //00db
+CLK_SPIAD6676(0x182,0x06); //06db
 CLK_SPIAD6676(0x19E,0x13); //
 CLK_SPIAD6676(0x19B,0x04); //
 CLK_SPIAD6676(0x19C,0x06); //
